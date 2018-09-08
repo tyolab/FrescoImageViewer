@@ -37,6 +37,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.stfalcon.frescoimageviewer.ImageViewerAdapter.IMAGE_VIEW_TYPE_DRAWEE;
+
 /*
  * Created by Alexander Krol (troy379) on 29.08.16.
  */
@@ -79,7 +81,7 @@ public class ImageViewer implements OnDismissListener, DialogInterface.OnKeyList
         viewer.setOverlayView(builder.overlayView);
         viewer.setImageMargin(builder.imageMarginPixels);
         viewer.setContainerPadding(builder.containerPaddingPixels);
-        viewer.setUrls(builder.dataSet, builder.startPosition);
+        viewer.setUrls(builder.imageViewType, builder.dataSet, builder.startPosition);
         viewer.setPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
@@ -169,7 +171,7 @@ public class ImageViewer implements OnDismissListener, DialogInterface.OnKeyList
         String format(T t);
     }
 
-    static class DataSet<T> {
+    public static class DataSet<T> {
 
         private List<T> data;
         private Formatter<T> formatter;
@@ -211,6 +213,7 @@ public class ImageViewer implements OnDismissListener, DialogInterface.OnKeyList
         private boolean shouldStatusBarHide = true;
         private boolean isZoomingAllowed = true;
         private boolean isSwipeToDismissAllowed = true;
+        private int imageViewType = IMAGE_VIEW_TYPE_DRAWEE;
 
         /**
          * Constructor using a context and images urls array for this builder and the {@link ImageViewer} it creates.
@@ -413,6 +416,16 @@ public class ImageViewer implements OnDismissListener, DialogInterface.OnKeyList
          */
         public Builder setCustomDraweeHierarchyBuilder(GenericDraweeHierarchyBuilder customHierarchyBuilder) {
             this.customHierarchyBuilder = customHierarchyBuilder;
+            return this;
+        }
+
+        /**
+         *
+         * @param imageViewType
+         * @return
+         */
+        public Builder setImageViewType(int imageViewType) {
+            this.imageViewType = imageViewType;
             return this;
         }
 

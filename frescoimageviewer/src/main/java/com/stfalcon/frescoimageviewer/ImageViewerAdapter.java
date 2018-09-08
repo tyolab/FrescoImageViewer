@@ -1,10 +1,12 @@
 package com.stfalcon.frescoimageviewer;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Animatable;
 import android.net.Uri;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.backends.pipeline.PipelineDraweeControllerBuilder;
@@ -19,13 +21,17 @@ import com.stfalcon.frescoimageviewer.drawee.ZoomableDraweeView;
 
 import java.util.HashSet;
 
+import au.com.tyo.android.images.utils.BitmapUtils;
 import me.relex.photodraweeview.OnScaleChangeListener;
 
 /*
  * Created by troy379 on 07.12.16.
  */
-class ImageViewerAdapter
+public class ImageViewerAdapter
         extends RecyclingPagerAdapter<ImageViewerAdapter.ImageViewHolder> {
+
+    public static final int IMAGE_VIEW_TYPE_PLAIN = 0;
+    public static final int IMAGE_VIEW_TYPE_DRAWEE = 1;
 
     private Context context;
     private ImageViewer.DataSet<?> dataSet;
@@ -34,24 +40,44 @@ class ImageViewerAdapter
     private GenericDraweeHierarchyBuilder hierarchyBuilder;
     private boolean isZoomingAllowed;
 
-    ImageViewerAdapter(Context context, ImageViewer.DataSet<?> dataSet,
-                       ImageRequestBuilder imageRequestBuilder,
-                       GenericDraweeHierarchyBuilder hierarchyBuilder,
-                       boolean isZoomingAllowed) {
+    private int imageViewType;
+
+    public ImageViewerAdapter(Context context, ImageViewer.DataSet<?> dataSet,
+                              ImageRequestBuilder imageRequestBuilder,
+                              GenericDraweeHierarchyBuilder hierarchyBuilder,
+                              boolean isZoomingAllowed) {
         this.context = context;
         this.dataSet = dataSet;
         this.holders = new HashSet<>();
         this.imageRequestBuilder = imageRequestBuilder;
         this.hierarchyBuilder = hierarchyBuilder;
         this.isZoomingAllowed = isZoomingAllowed;
+
+        this.imageViewType = IMAGE_VIEW_TYPE_DRAWEE;
+    }
+
+    public int getImageViewType() {
+        return imageViewType;
+    }
+
+    public void setImageViewType(int imageViewType) {
+        this.imageViewType = imageViewType;
     }
 
     @Override
     public ImageViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        ZoomableDraweeView drawee = new ZoomableDraweeView(context);
-        drawee.setEnabled(isZoomingAllowed);
+        ImageViewHolder holder = null;
+        if (imageViewType == IMAGE_VIEW_TYPE_DRAWEE) {
+            ZoomableDraweeView drawee = new ZoomableDraweeView(context);
+            drawee.setEnabled(isZoomingAllowed);
+            holder = new DraweeViewHolder(drawee);
+        }
+        else {
+            ImageView imageView = new ImageView(context);
+            imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            holder = new PlainImageViewHolder(imageView);
+        }
 
-        ImageViewHolder holder = new ImageViewHolder(drawee);
         holders.add(holder);
 
         return holder;
@@ -104,19 +130,66 @@ class ImageViewerAdapter
         };
     }
 
-    class ImageViewHolder extends ViewHolder implements OnScaleChangeListener {
+    abstract class ImageViewHolder extends ViewHolder implements OnScaleChangeListener {
 
         private int position = -1;
-        private ZoomableDraweeView drawee;
-        private boolean isScaled;
+
+        protected boolean isScaled;
 
         ImageViewHolder(View itemView) {
             super(itemView);
-            drawee = (ZoomableDraweeView) itemView;
+
         }
 
         void bind(int position) {
             this.position = position;
+
+        }
+
+        abstract void resetScale();
+    }
+
+    public class PlainImageViewHolder extends ImageViewHolder {
+
+        private ImageView imageView;
+
+        PlainImageViewHolder(View itemView) {
+            super(itemView);
+            this.imageView = (ImageView) itemView;
+        }
+
+        @Override
+        void resetScale() {
+
+        }
+
+        @Override
+        public void onScaleChange(float scaleFactor, float focusX, float focusY) {
+
+        }
+
+        @Override
+        void bind(int position) {
+            super.bind(position);
+
+            Bitmap bitmap = (Bitmap) dataSet.getData().get(position);
+            imageView.setImageBitmap(bitmap);
+        }
+    }
+
+    public class DraweeViewHolder extends ImageViewHolder {
+
+        private ZoomableDraweeView drawee;
+
+        DraweeViewHolder(View itemView) {
+            super(itemView);
+
+            drawee = (ZoomableDraweeView) itemView;
+        }
+
+        @Override
+        void bind(int position) {
+            super.bind(position);
 
             tryToSetHierarchy();
             setController(dataSet.format(position));
@@ -129,6 +202,7 @@ class ImageViewerAdapter
             isScaled = drawee.getScale() > 1.0f;
         }
 
+        @Override
         void resetScale() {
             drawee.setScale(1.0f, true);
         }
@@ -151,6 +225,5 @@ class ImageViewerAdapter
             }
             drawee.setController(controllerBuilder.build());
         }
-
     }
 }
